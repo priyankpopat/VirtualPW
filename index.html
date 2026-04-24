@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Election Assistant | Your Voice, Your Vote</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Loader -->
+    <div class="loader" id="loader">
+        <div class="loader-content">
+            <div class="loader-icon">
+                <i class="fas fa-vote-yea"></i>
+            </div>
+            <div class="loader-text">Loading AI Election Assistant</div>
+            <div class="loader-progress">
+                <div class="loader-progress-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container" id="mainContainer">
+        <!-- Background Effects -->
+        <div class="bg-effects">
+            <div class="gradient-orb orb-1"></div>
+            <div class="gradient-orb orb-2"></div>
+            <div class="gradient-orb orb-3"></div>
+        </div>
+
+        <!-- Left Section - Info -->
+        <div class="info-section">
+            <div class="logo">
+                <i class="fas fa-vote-yea"></i>
+                <span>AI Election Assistant</span>
+            </div>
+            <h1>Empower Your Voice in Democracy</h1>
+            <p class="tagline">Your intelligent companion for understanding the electoral process, checking eligibility, and making informed voting decisions.</p>
+            
+            <!-- How It Works Section -->
+            <div class="how-it-works">
+                <h3><i class="fas fa-route"></i> How It Works</h3>
+                <div class="steps-container">
+                    <div class="step-item">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Check Eligibility</h4>
+                            <p>Verify if you're eligible to vote based on age and citizenship</p>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>Register</h4>
+                            <p>Get guidance on voter registration process</p>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Cast Your Vote</h4>
+                            <p>Vote for your preferred party securely</p>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h4>View Results</h4>
+                            <p>Track live voting results and insights</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="features-list">
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fas fa-user-check"></i></div>
+                    <div class="feature-text">
+                        <h3>Eligibility Check</h3>
+                        <p>Verify if you're eligible to vote</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <div class="feature-text">
+                        <h3>Find Polling Booth</h3>
+                        <p>Locate your nearest voting center</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fas fa-robot"></i></div>
+                    <div class="feature-text">
+                        <h3>Smart Assistant</h3>
+                        <p>Get answers to your questions</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fas fa-chart-bar"></i></div>
+                    <div class="feature-text">
+                        <h3>Live Results</h3>
+                        <p>Track voting results in real-time</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Section - Login -->
+        <div class="login-section">
+            <div class="login-card">
+                <div class="login-header">
+                    <h2>Welcome Back</h2>
+                    <p>Sign in to continue to your election assistant</p>
+                </div>
+                
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="username">
+                            <i class="fas fa-user"></i>
+                            Your Name
+                        </label>
+                        <input type="text" id="username" name="username" placeholder="Enter your name" required autocomplete="off" minlength="2">
+                        <div class="input-highlight"></div>
+                        <div class="input-error" id="usernameError"></div>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary">
+                        <span>Continue</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </form>
+                
+                <div class="login-footer">
+                    <p><i class="fas fa-info-circle"></i> Your data is stored locally for privacy</p>
+                </div>
+            </div>
+            
+            <div class="stats-mini">
+                <div class="stat-item">
+                    <span class="stat-number" id="totalVoters">0</span>
+                    <span class="stat-label">Total Voters</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="totalVotes">0</span>
+                    <span class="stat-label">Votes Cast</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

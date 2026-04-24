@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Election Assistant | Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Loader -->
+    <div class="loader" id="loader">
+        <div class="loader-content">
+            <div class="loader-icon">
+                <i class="fas fa-vote-yea"></i>
+            </div>
+            <div class="loader-text">Loading Dashboard</div>
+            <div class="loader-progress">
+                <div class="loader-progress-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-vote-yea"></i>
+                <span>AI Election</span>
+            </div>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-section="vote">
+                <i class="fas fa-vote-yea"></i>
+                <span>Cast Vote</span>
+            </a>
+            <a href="#" class="nav-item" data-section="results">
+                <i class="fas fa-chart-bar"></i>
+                <span>Results</span>
+            </a>
+            <a href="#" class="nav-item" data-section="eligibility">
+                <i class="fas fa-user-check"></i>
+                <span>Eligibility</span>
+            </a>
+            <a href="#" class="nav-item" data-section="booth">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Polling Booth</span>
+            </a>
+            <a href="#" class="nav-item" data-section="assistant">
+                <i class="fas fa-robot"></i>
+                <span>AI Assistant</span>
+            </a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="user-details">
+                    <span class="user-name" id="displayName">User</span>
+                    <span class="user-status">Logged In</span>
+                </div>
+            </div>
+            <button class="logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <button class="menu-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h1>Election Dashboard</h1>
+            <div class="header-actions">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search...">
+                </div>
+                <div class="notification-bell">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge">3</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Sections -->
+        <div class="content-wrapper">
+            <!-- Vote Section -->
+            <section class="content-section active" id="voteSection">
+                <div class="section-header">
+                    <h2><i class="fas fa-vote-yea"></i> Cast Your Vote</h2>
+                    <p>Choose your preferred party to cast your vote</p>
+                </div>
+                
+                <div class="vote-status-card">
+                    <div class="status-icon">
+                        <i class="fas fa-ballot"></i>
+                    </div>
+                    <div class="status-info">
+                        <h3>Your Vote Status</h3>
+                        <p id="voteStatusText">You haven't voted yet</p>
+                    </div>
+                </div>
+                
+                <div class="parties-grid">
+                    <div class="party-card" data-party="BJP">
+                        <div class="party-flag">🇮🇳</div>
+                        <div class="party-name">BJP</div>
+                        <div class="party-fullname">Bharatiya Janata Party</div>
+                        <div class="party-symbol">
+                            <i class="fas fa-lotus"></i>
+                        </div>
+                        <button class="vote-btn" onclick="castVote('BJP')">
+                            <i class="fas fa-check"></i> Vote BJP
+                        </button>
+                    </div>
+                    
+                    <div class="party-card" data-party="Congress">
+                        <div class="party-flag">✋</div>
+                        <div class="party-name">Congress</div>
+                        <div class="party-fullname">Indian National Congress</div>
+                        <div class="party-symbol">
+                            <i class="fas fa-hand-paper"></i>
+                        </div>
+                        <button class="vote-btn" onclick="castVote('Congress')">
+                            <i class="fas fa-check"></i> Vote Congress
+                        </button>
+                    </div>
+                    
+                    <div class="party-card" data-party="AAP">
+                        <div class="party-flag">🧹</div>
+                        <div class="party-name">AAP</div>
+                        <div class="party-fullname">Aam Aadmi Party</div>
+                        <div class="party-symbol">
+                            <i class="fas fa-broom"></i>
+                        </div>
+                        <button class="vote-btn" onclick="castVote('AAP')">
+                            <i class="fas fa-check"></i> Vote AAP
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="content-section" id="resultsSection">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-bar"></i> Live Results</h2>
+                    <p>Real-time voting results and statistics</p>
+                </div>
+                
+                <div class="results-grid">
+                    <div class="chart-card">
+                        <h3>Vote Distribution</h3>
+                        <canvas id="voteChart"></canvas>
+                    </div>
+                    
+                    <div class="stats-card">
+                        <h3>📊 Advanced Statistics</h3>
+                        <div class="stat-row">
+                            <span class="stat-label">Total Votes</span>
+                            <span class="stat-value" id="totalVotesDisplay">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Leading Party</span>
+                            <span class="stat-value highlight" id="leadingParty">-</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Vote Margin</span>
+                            <span class="stat-value" id="voteMargin">-</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">BJP %</span>
+                            <span class="stat-value" id="bjpPercent">0%</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Congress %</span>
+                            <span class="stat-value" id="congressPercent">0%</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">AAP %</span>
+                            <span class="stat-value" id="aapPercent">0%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="winner-card" id="winnerCard">
+                    <div class="winner-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="winner-info">
+                        <h3>Current Leader</h3>
+                        <p id="winnerText">No votes yet - Be the first to vote!</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Eligibility Section -->
+            <section class="content-section" id="eligibilitySection">
+                <div class="section-header">
+                    <h2><i class="fas fa-user-check"></i> Smart Eligibility Checker</h2>
+                    <p>AI-powered eligibility verification with personalized guidance</p>
+                </div>
+                
+                <div class="eligibility-form-card">
+                    <form id="eligibilityForm" class="eligibility-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ageInput">
+                                    <i class="fas fa-birthday-cake"></i>
+                                    Your Age
+                                </label>
+                                <input type="number" id="ageInput" placeholder="Enter your age (e.g., 25)" min="1" max="150" required>
+                                <div class="input-error" id="ageError"></div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="citizenshipSelect">
+                                    <i class="fas fa-passport"></i>
+                                    Citizenship Status
+                                </label>
+                                <select id="citizenshipSelect" required>
+                                    <option value="">Select citizenship</option>
+                                    <option value="indian">🇮🇳 Indian Citizen</option>
+                                    <option value="other">🌍 Other</option>
+                                </select>
+                                <div class="input-error" id="citizenshipError"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="firstTimeSelect">
+                                    <i class="fas fa-user-plus"></i>
+                                    First-Time Voter?
+                                </label>
+                                <select id="firstTimeSelect" required>
+                                    <option value="">Select option</option>
+                                    <option value="yes">Yes, this is my first time</option>
+                                    <option value="no">No, I've voted before</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-magic"></i>
+                            Check Eligibility
+                        </button>
+                    </form>
+                    
+                    <div class="eligibility-result" id="eligibilityResult">
+                        <div class="result-icon">
+                            <i class="fas fa-question-circle"></i>
+                        </div>
+                        <div class="result-text">
+                            <h3>Enter your details to check eligibility</h3>
+                            <p>You must be at least 18 years old and an Indian citizen to be eligible to vote</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Smart Guidance Panel -->
+                <div class="guidance-panel" id="guidancePanel" style="display: none;">
+                    <h3><i class="fas fa-lightbulb"></i> Your Personalized Action Plan</h3>
+                    <div class="guidance-steps" id="guidanceSteps">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+                
+                <div class="eligibility-info-cards">
+                    <div class="info-card">
+                        <i class="fas fa-id-card"></i>
+                        <h4>ID Required</h4>
+                        <p>Bring a valid photo ID to the polling booth</p>
+                    </div>
+                    <div class="info-card">
+                        <i class="fas fa-calendar-check"></i>
+                        <h4>Election Dates</h4>
+                        <p>Check official sources for upcoming elections</p>
+                    </div>
+                    <div class="info-card">
+                        <i class="fas fa-clock"></i>
+                        <h4>Voting Hours</h4>
+                        <p>Polling stations are open from 7 AM to 6 PM</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Polling Booth Section -->
+            <section class="content-section" id="boothSection">
+                <div class="section-header">
+                    <h2><i class="fas fa-map-marker-alt"></i> Find Polling Booth</h2>
+                    <p>Locate your nearest voting center using Google Maps</p>
+                </div>
+                
+                <div class="booth-finder-card">
+                    <div class="finder-icon">
+                        <i class="fas fa-map"></i>
+                    </div>
+                    <h3>Polling Booth Locator</h3>
+                    <p>Enter your city name to find the nearest polling booth</p>
+                    
+                    <form id="boothForm" class="booth-form">
+                        <div class="input-group">
+                            <i class="fas fa-city"></i>
+                            <input type="text" id="cityInput" placeholder="Enter your city name (e.g., Mumbai, Delhi)" required>
+                        </div>
+                        <div class="input-error" id="cityError"></div>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-search-location"></i>
+                            Find on Google Maps
+                        </button>
+                    </form>
+                    
+                    <!-- Enhanced Maps Message -->
+                    <div class="maps-message" id="mapsMessage" style="display: none;">
+                        <i class="fas fa-map-marked-alt"></i>
+                        <span>Showing nearest polling booths near <strong id="searchedCity"></strong></span>
+                    </div>
+                    
+                    <div class="recent-searches" id="recentSearches">
+                        <h4>Recent Searches</h4>
+                        <div class="search-tags">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="booth-info-card">
+                    <h3><i class="fas fa-info-circle"></i> Important Information</h3>
+                    <ul>
+                        <li><i class="fas fa-check"></i> Find your polling station using your voter ID</li>
+                        <li><i class="fas fa-check"></i> Check the voter list online at voterportal.eci.gov.in</li>
+                        <li><i class="fas fa-check"></i> You can also download the Voter Helpline App</li>
+                        <li><i class="fas fa-check"></i> Reach your polling station early to avoid queues</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- AI Assistant Section -->
+            <section class="content-section" id="assistantSection">
+                <div class="section-header">
+                    <h2><i class="fas fa-robot"></i> AI Election Assistant</h2>
+                    <p>Get instant answers to your election-related questions</p>
+                </div>
+                
+                <div class="assistant-container">
+                    <div class="assistant-header">
+                        <div class="assistant-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="assistant-info">
+                            <h3>Election Bot</h3>
+                            <p>Online • Ready to help</p>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-container" id="chatContainer">
+                        <div class="chat-message bot-message">
+                            <div class="message-icon">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="message-content">
+                                <p>Hello! 👋 I'm your AI Election Assistant. I can help you with:</p>
+                                <ul>
+                                    <li>How to vote process</li>
+                                    <li>Eligibility requirements</li>
+                                    <li>Finding your polling booth</li>
+                                    <li>Voter registration</li>
+                                    <li>Election dates and information</li>
+                                </ul>
+                                <p>Type your question below to get started!</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form class="chat-input-form" id="chatForm">
+                        <div class="chat-input-wrapper">
+                            <input type="text" id="chatInput" placeholder="Type your question here..." autocomplete="off">
+                            <button type="submit" class="send-btn">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="quick-questions">
+                        <button class="quick-btn" onclick="sendQuickQuestion('How do I vote?')">
+                            <i class="fas fa-vote-yea"></i> How do I vote?
+                        </button>
+                        <button class="quick-btn" onclick="sendQuickQuestion('What is the eligibility?')">
+                            <i class="fas fa-user-check"></i> What is the eligibility?
+                        </button>
+                        <button class="quick-btn" onclick="sendQuickQuestion('Where is my polling booth?')">
+                            <i class="fas fa-map-marker-alt"></i> Where is my polling booth?
+                        </button>
+                        <button class="quick-btn" onclick="sendQuickQuestion('How to register to vote?')">
+                            <i class="fas fa-user-plus"></i> How to register to vote?
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
