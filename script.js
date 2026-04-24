@@ -9,6 +9,44 @@
 let voteChart = null;
 let currentUser = null;
 
+// Demo mode storage (works on live domain)
+let demoVotes = { 'BJP': 0, 'Congress': 0, 'AAP': 0 };
+let demoUserVote = null;
+let demoVoters = [];
+
+// Check if we're on a live domain (no localStorage)
+const isLiveDomain = window.location.href.includes('storage.googleapis.com') || 
+                     window.location.href.includes('github.io') ||
+                     window.location.href.includes('netlify') ||
+                     window.location.href.includes('vercel');
+
+// ========================================
+// STORAGE HELPERS (Works on all domains)
+// ========================================
+function getStorage(key) {
+    if (isLiveDomain) {
+        // Use in-memory for demo
+        if (key === 'votes') return JSON.stringify(demoVotes);
+        if (key === 'voters') return JSON.stringify(demoVoters);
+        if (key.startsWith('vote_')) return null;
+        if (key === 'currentUser') return sessionStorage.getItem(key);
+        return localStorage.getItem(key);
+    }
+    return localStorage.getItem(key);
+}
+
+function setStorage(key, value) {
+    if (isLiveDomain) {
+        if (key === 'votes') { demoVotes = JSON.parse(value); return; }
+        if (key === 'voters') { demoVoters = JSON.parse(value); return; }
+        if (key.startsWith('vote_')) { demoUserVote = value; return; }
+        if (key === 'currentUser') { sessionStorage.setItem(key, value); return; }
+        localStorage.setItem(key, value);
+    } else {
+        localStorage.setItem(key, value);
+    }
+}
+
 // ========================================
 // INITIALIZATION
 // ========================================
@@ -56,11 +94,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // SESSION PERSISTENCE
 // ========================================
 function saveActiveSection(section) {
-    localStorage.setItem('lastActiveSection', section);
+    setStorage('lastActiveSection', section);
 }
 
 function getLastActiveSection() {
-    return localStorage.getItem('lastActiveSection') || 'vote';
+    return getStorage('lastActiveSection') || 'vote';
 }
 
 function restoreSession() {
@@ -112,13 +150,13 @@ function handleLogin(e) {
     }
     
     // Store user in localStorage
-    localStorage.setItem('currentUser', username);
+    setStorage('currentUser', username);
     
     // Track total voters
-    let voters = JSON.parse(localStorage.getItem('voters') || '[]');
+    let voters = JSON.parse(getStorage('voters') || '[]');
     if (!voters.includes(username)) {
         voters.push(username);
-        localStorage.setItem('voters', JSON.stringify(voters));
+        setStorage('voters', JSON.stringify(voters));
     }
     
     showToast('Welcome!', `Hello ${username}! Redirecting to dashboard...`, 'success');
@@ -134,7 +172,7 @@ function handleLogin(e) {
 // ========================================
 function initDashboard() {
     // Check authentication
-    currentUser = localStorage.getItem('currentUser');
+    currentUser = getStorage('currentUser');
     if (!currentUser) {
         window.location.href = 'index.html';
         return;
@@ -217,23 +255,23 @@ function toggleSidebar() {
 // ========================================
 function castVote(party) {
     // Check if user already voted
-    const userVote = localStorage.getItem(`vote_${currentUser}`);
+    const userVote = getStorage(`vote_${currentUser}`);
     if (userVote) {
         showToast('Already Voted', 'You have already cast your vote', 'warning');
         return;
     }
     
     // Get current votes
-    let votes = JSON.parse(localStorage.getItem('votes') || '{}');
+    let votes = JSON.parse(getStorage('votes') || '{}');
     
     // Increment vote for party
     votes[party] = (votes[party] || 0) + 1;
     
     // Save votes
-    localStorage.setItem('votes', JSON.stringify(votes));
+    setStorage('votes', JSON.stringify(votes));
     
     // Mark user as voted
-    localStorage.setItem(`vote_${currentUser}`, party);
+    setStorage(`vote_${currentUser}`, party);
     
     // Update vote status
     updateVoteStatus();
@@ -253,7 +291,7 @@ function castVote(party) {
 
 function updateVoteStatus() {
     const voteStatusText = document.getElementById('voteStatusText');
-    const userVote = localStorage.getItem(`vote_${currentUser}`);
+    const userVote = getStorage(`vote_${currentUser}`);
     
     if (voteStatusText) {
         if (userVote) {
@@ -279,7 +317,7 @@ function updateVoteStatus() {
 // RESULTS & CHART (Enhanced with Percentages)
 // ========================================
 function loadResults() {
-    const votes = JSON.parse(localStorage.getItem('votes') || '{}');
+    const votes = JSON.parse(getStorage('votes') || '{}');
     const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0);
     
     // Update stats
@@ -652,7 +690,7 @@ function handleBoothSearch(e) {
 }
 
 function saveRecentSearch(city) {
-    let searches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+    let searches = JSON.parse(getStorage('recentSearches') || '[]');
     
     // Remove if already exists
     searches = searches.filter(s => s.toLowerCase() !== city.toLowerCase());
@@ -664,7 +702,7 @@ function saveRecentSearch(city) {
     searches = searches.slice(0, 5);
     
     // Save
-    localStorage.setItem('recentSearches', JSON.stringify(searches));
+    setStorage('recentSearches', JSON.stringify(searches));
     
     // Update UI
     updateRecentSearches();
@@ -674,7 +712,7 @@ function updateRecentSearches() {
     const container = document.querySelector('.search-tags');
     if (!container) return;
     
-    const searches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+    const searches = JSON.parse(getStorage('recentSearches') || '[]');
     
     if (searches.length === 0) {
         container.innerHTML = '<span class="search-tag">No recent searches</span>';
@@ -907,7 +945,7 @@ function getBotResponse(message) {
 // ========================================
 function logout() {
     // Clear current user session
-    localStorage.removeItem('currentUser');
+    setStorage('currentUser', null);
     
     showToast('Logged Out', 'You have been logged out successfully', 'info');
     
@@ -921,8 +959,8 @@ function logout() {
 // INDEX PAGE STATS
 // ========================================
 function updateIndexStats() {
-    const voters = JSON.parse(localStorage.getItem('voters') || '[]');
-    const votes = JSON.parse(localStorage.getItem('votes') || '{}');
+    const voters = JSON.parse(getStorage('voters') || '[]');
+    const votes = JSON.parse(getStorage('votes') || '{}');
     const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0);
     
     const totalVotersEl = document.getElementById('totalVoters');
