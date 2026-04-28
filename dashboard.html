@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="api-client.js"></script>
 </head>
 <body>
     <!-- Loader -->
@@ -54,6 +56,10 @@
             <a href="#" class="nav-item" data-section="assistant">
                 <i class="fas fa-robot"></i>
                 <span>AI Assistant</span>
+            </a>
+            <a href="#" class="nav-item admin-link" id="adminLink" style="display: none;" onclick="goToAdmin()">
+                <i class="fas fa-shield-alt"></i>
+                <span>Admin Panel</span>
             </a>
         </nav>
         

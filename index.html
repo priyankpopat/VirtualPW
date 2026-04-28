@@ -113,29 +113,98 @@
         <div class="login-section">
             <div class="login-card">
                 <div class="login-header">
-                    <h2>Welcome Back</h2>
-                    <p>Sign in to continue to your election assistant</p>
+                    <h2>Welcome</h2>
+                    <p>Sign in or create an account</p>
+                    
+                    <!-- Auth Tabs -->
+                    <div class="auth-tabs">
+                        <button class="auth-tab active" data-tab="login">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </button>
+                        <button class="auth-tab" data-tab="register">
+                            <i class="fas fa-user-plus"></i> Register
+                        </button>
+                        <button class="auth-tab" data-tab="guest">
+                            <i class="fas fa-user"></i> Guest
+                        </button>
+                    </div>
                 </div>
                 
-                <form id="loginForm" class="login-form">
+                <!-- Login Tab -->
+                <form id="loginForm" class="auth-form active" data-form="login">
                     <div class="form-group">
-                        <label for="username">
-                            <i class="fas fa-user"></i>
-                            Your Name
+                        <label for="loginEmail">
+                            <i class="fas fa-envelope"></i>
+                            Email
                         </label>
-                        <input type="text" id="username" name="username" placeholder="Enter your name" required autocomplete="off" minlength="2">
-                        <div class="input-highlight"></div>
-                        <div class="input-error" id="usernameError"></div>
+                        <input type="email" id="loginEmail" name="email" placeholder="Enter your email" required autocomplete="off">
+                        <div class="input-error" id="loginEmailError"></div>
                     </div>
-                    
+                    <div class="form-group">
+                        <label for="loginPassword">
+                            <i class="fas fa-lock"></i>
+                            Password
+                        </label>
+                        <input type="password" id="loginPassword" name="password" placeholder="Enter your password" required autocomplete="off">
+                        <div class="input-error" id="loginPasswordError"></div>
+                    </div>
                     <button type="submit" class="btn-primary">
-                        <span>Continue</span>
+                        <span>Sign In</span>
                         <i class="fas fa-arrow-right"></i>
                     </button>
                 </form>
                 
+                <!-- Register Tab -->
+                <form id="registerForm" class="auth-form" data-form="register">
+                    <div class="form-group">
+                        <label for="registerName">
+                            <i class="fas fa-user"></i>
+                            Full Name
+                        </label>
+                        <input type="text" id="registerName" name="name" placeholder="Enter your name" required autocomplete="off" minlength="2">
+                        <div class="input-error" id="registerNameError"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">
+                            <i class="fas fa-envelope"></i>
+                            Email
+                        </label>
+                        <input type="email" id="registerEmail" name="email" placeholder="Enter your email" required autocomplete="off">
+                        <div class="input-error" id="registerEmailError"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">
+                            <i class="fas fa-lock"></i>
+                            Password
+                        </label>
+                        <input type="password" id="registerPassword" name="password" placeholder="Min. 6 characters" required autocomplete="off" minlength="6">
+                        <div class="input-error" id="registerPasswordError"></div>
+                    </div>
+                    <button type="submit" class="btn-primary">
+                        <span>Create Account</span>
+                        <i class="fas fa-check"></i>
+                    </button>
+                </form>
+                
+                <!-- Guest Tab -->
+                <form id="guestForm" class="auth-form" data-form="guest">
+                    <div class="form-group">
+                        <label for="guestName">
+                            <i class="fas fa-user"></i>
+                            Your Name
+                        </label>
+                        <input type="text" id="guestName" name="username" placeholder="Enter your name" required autocomplete="off" minlength="2">
+                        <div class="input-error" id="guestNameError"></div>
+                    </div>
+                    <button type="submit" class="btn-primary">
+                        <span>Continue as Guest</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                    <p class="guest-note"><i class="fas fa-info-circle"></i> Guest data is stored locally only</p>
+                </form>
+                
                 <div class="login-footer">
-                    <p><i class="fas fa-info-circle"></i> Your data is stored locally for privacy</p>
+                    <p><i class="fas fa-shield-alt"></i> Your data is secure and private</p>
                 </div>
             </div>
             
@@ -155,6 +224,7 @@
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
+    <script src="api-client.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

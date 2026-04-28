@@ -9,41 +9,23 @@
 let voteChart = null;
 let currentUser = null;
 
-// Demo mode storage (works on live domain)
-let demoVotes = { 'BJP': 0, 'Congress': 0, 'AAP': 0 };
-let demoUserVote = null;
-let demoVoters = [];
+// Global vote data (simple & reliable)
+window.votesData = {
+    BJP: 0,
+    Congress: 0,
+    AAP: 0,
+    userVoted: false
+};
 
-// Check if we're on a live domain (no localStorage)
-const isLiveDomain = window.location.href.includes('storage.googleapis.com') || 
-                     window.location.href.includes('github.io') ||
-                     window.location.href.includes('netlify') ||
-                     window.location.href.includes('vercel');
-
-// ========================================
-// STORAGE HELPERS (Works on all domains)
-// ========================================
-function getStorage(key) {
-    if (isLiveDomain) {
-        // Use in-memory for demo
-        if (key === 'votes') return JSON.stringify(demoVotes);
-        if (key === 'voters') return JSON.stringify(demoVoters);
-        if (key.startsWith('vote_')) return null;
-        if (key === 'currentUser') return sessionStorage.getItem(key);
-        return localStorage.getItem(key);
-    }
-    return localStorage.getItem(key);
-}
-
-function setStorage(key, value) {
-    if (isLiveDomain) {
-        if (key === 'votes') { demoVotes = JSON.parse(value); return; }
-        if (key === 'voters') { demoVoters = JSON.parse(value); return; }
-        if (key.startsWith('vote_')) { demoUserVote = value; return; }
-        if (key === 'currentUser') { sessionStorage.setItem(key, value); return; }
-        localStorage.setItem(key, value);
-    } else {
-        localStorage.setItem(key, value);
+// Load votes on page load
+if (typeof(Storage) !== "undefined") {
+    try {
+        const saved = localStorage.getItem('votesData');
+        if (saved) {
+            window.votesData = JSON.parse(saved);
+        }
+    } catch(e) {
+        console.log('Could not load votes from storage');
     }
 }
 
@@ -51,8 +33,17 @@ function setStorage(key, value) {
 // INITIALIZATION
 // ========================================
 document.addEventListener('DOMContentLoaded', function() {
+    // Restore user from session
+    const savedUser = sessionStorage.getItem('currentUser');
+    if (savedUser) {
+        currentUser = savedUser;
+    }
+    
     // Check which page we're on
     const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const guestForm = document.getElementById('guestForm');
+    const authTabs = document.querySelectorAll('.auth-tab');
     const sidebar = document.getElementById('sidebar');
     const chatForm = document.getElementById('chatForm');
     const eligibilityForm = document.getElementById('eligibilityForm');
@@ -66,9 +57,72 @@ document.addEventListener('DOMContentLoaded', function() {
         initDashboard();
     }
     
+    // Auth tab handlers
+    authTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.dataset.tab;
+            authTabs.forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            this.classList.add('active');
+            document.querySelector(`.auth-form[data-form="${tabName}"]`)?.classList.add('active');
+        });
+    });
+    
     // Login form handler
     if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const result = await window.electionAPI.login(email, password);
+                showToast('✓ Login Successful!', `Welcome ${result.user.name}!`, 'success');
+                setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
+            } catch(error) {
+                showToast('❌ Login Failed', error.message, 'error');
+                document.getElementById('loginPasswordError').textContent = error.message;
+            }
+        });
+    }
+    
+    // Register form handler
+    if (registerForm) {
+        registerForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('registerName').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            
+            try {
+                const result = await window.electionAPI.register(name, email, password);
+                showToast('✓ Account Created!', `Welcome ${result.user.name}!`, 'success');
+                setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
+            } catch(error) {
+                showToast('❌ Registration Failed', error.message, 'error');
+                document.getElementById('registerEmailError').textContent = error.message;
+            }
+        });
+    }
+    
+    // Guest form handler
+    if (guestForm) {
+        guestForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const username = document.getElementById('guestName').value.trim();
+            
+            if (!username || username.length < 2) {
+                showToast('Error', 'Please enter a valid name', 'error');
+                return;
+            }
+            
+            sessionStorage.setItem('currentUser', username);
+            sessionStorage.setItem('guestMode', 'true');
+            currentUser = username;
+            
+            showToast('✓ Welcome!', `Hello ${username}!`, 'success');
+            setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
+        });
     }
     
     // Chat form handler
@@ -94,11 +148,19 @@ document.addEventListener('DOMContentLoaded', function() {
 // SESSION PERSISTENCE
 // ========================================
 function saveActiveSection(section) {
-    setStorage('lastActiveSection', section);
+    try {
+        localStorage.setItem('lastActiveSection', section);
+    } catch(e) {
+        console.log('Could not save active section');
+    }
 }
 
 function getLastActiveSection() {
-    return getStorage('lastActiveSection') || 'vote';
+    try {
+        return localStorage.getItem('lastActiveSection') || 'vote';
+    } catch(e) {
+        return 'vote';
+    }
 }
 
 function restoreSession() {
@@ -133,46 +195,18 @@ function initLoader() {
 // ========================================
 // LOGIN SYSTEM
 // ========================================
+// Legacy handleLogin function (for backward compatibility)
 function handleLogin(e) {
-    e.preventDefault();
-    
-    const usernameInput = document.getElementById('username');
-    const username = usernameInput.value.trim();
-    
-    if (!username) {
-        showToast('Error', 'Please enter your name', 'error');
-        return;
-    }
-    
-    if (username.length < 2) {
-        showToast('Error', 'Name must be at least 2 characters', 'error');
-        return;
-    }
-    
-    // Store user in localStorage
-    setStorage('currentUser', username);
-    
-    // Track total voters
-    let voters = JSON.parse(getStorage('voters') || '[]');
-    if (!voters.includes(username)) {
-        voters.push(username);
-        setStorage('voters', JSON.stringify(voters));
-    }
-    
-    showToast('Welcome!', `Hello ${username}! Redirecting to dashboard...`, 'success');
-    
-    // Redirect after brief delay
-    setTimeout(() => {
-        window.location.href = 'dashboard.html';
-    }, 1000);
+    // This is now handled by the form-specific handlers in DOMContentLoaded
 }
+
 
 // ========================================
 // DASHBOARD INITIALIZATION
 // ========================================
 function initDashboard() {
-    // Check authentication
-    currentUser = getStorage('currentUser');
+    // Check authentication using sessionStorage
+    currentUser = sessionStorage.getItem('currentUser');
     if (!currentUser) {
         window.location.href = 'index.html';
         return;
@@ -182,6 +216,15 @@ function initDashboard() {
     const displayName = document.getElementById('displayName');
     if (displayName) {
         displayName.textContent = currentUser;
+    }
+    
+    // Check if user is admin and show admin link
+    const user = window.electionAPI.getCurrentUser();
+    if (user && user.role === 'admin') {
+        const adminLink = document.getElementById('adminLink');
+        if (adminLink) {
+            adminLink.style.display = 'flex';
+        }
     }
     
     // Initialize navigation
@@ -251,64 +294,51 @@ function toggleSidebar() {
 }
 
 // ========================================
-// VOTING SYSTEM
+// VOTING SYSTEM (BACKEND-POWERED)
 // ========================================
-function castVote(party) {
-    // Check if user already voted
-    const userVote = getStorage(`vote_${currentUser}`);
-    if (userVote) {
-        showToast('Already Voted', 'You have already cast your vote', 'warning');
-        return;
+async function castVote(party) {
+    try {
+        console.log('🗳️ Vote button clicked for:', party);
+        
+        // Call backend API
+        const result = await window.electionAPI.castVote(party);
+        
+        // Show success
+        showToast('✅ Vote Recorded!', `Your vote for ${party} has been recorded!`, 'success');
+        
+        // Update UI
+        setTimeout(() => {
+            updateVoteStatus();
+            loadResults();
+        }, 500);
+        
+    } catch(error) {
+        console.error('Vote error:', error);
+        showToast('❌ Error', error.message || 'Failed to cast vote', 'error');
     }
-    
-    // Get current votes
-    let votes = JSON.parse(getStorage('votes') || '{}');
-    
-    // Increment vote for party
-    votes[party] = (votes[party] || 0) + 1;
-    
-    // Save votes
-    setStorage('votes', JSON.stringify(votes));
-    
-    // Mark user as voted
-    setStorage(`vote_${currentUser}`, party);
-    
-    // Update vote status
-    updateVoteStatus();
-    
-    // Show success message
-    const partyNames = {
-        'BJP': 'Bharatiya Janata Party',
-        'Congress': 'Indian National Congress',
-        'AAP': 'Aam Aadmi Party'
-    };
-    
-    showToast('Vote Cast!', `Your vote for ${party} (${partyNames[party]}) has been recorded`, 'success');
-    
-    // Update results
-    loadResults();
 }
 
 function updateVoteStatus() {
     const voteStatusText = document.getElementById('voteStatusText');
-    const userVote = getStorage(`vote_${currentUser}`);
     
     if (voteStatusText) {
-        if (userVote) {
-            voteStatusText.textContent = `You have voted for ${userVote}`;
+        if (window.votesData.userVoted) {
+            voteStatusText.textContent = '✓ You have voted';
             voteStatusText.style.color = '#10b981';
         } else {
-            voteStatusText.textContent = "You haven't voted yet";
+            voteStatusText.textContent = "Select a party to vote";
             voteStatusText.style.color = '#94a3b8';
         }
     }
     
     // Disable vote buttons if already voted
-    if (userVote) {
+    if (window.votesData.userVoted) {
         const voteButtons = document.querySelectorAll('.party-card .vote-btn');
         voteButtons.forEach(btn => {
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-check"></i> Voted';
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+            btn.textContent = '✓ Voted';
         });
     }
 }
@@ -317,8 +347,9 @@ function updateVoteStatus() {
 // RESULTS & CHART (Enhanced with Percentages)
 // ========================================
 function loadResults() {
-    const votes = JSON.parse(getStorage('votes') || '{}');
-    const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0);
+    // Fetch votes from backend
+    window.electionAPI.getVotes().then(votes => {
+        const totalVotes = votes.total || 0;
     
     // Update stats
     const totalVotesDisplay = document.getElementById('totalVotesDisplay');
@@ -331,23 +362,26 @@ function loadResults() {
     let maxVotes = 0;
     let voteMargin = '-';
     
-    for (const [party, count] of Object.entries(votes)) {
-        if (count > maxVotes) {
-            maxVotes = count;
-            leadingParty = party;
+    const partyVotes = [votes.BJP, votes.Congress, votes.AAP];
+    const parties = ['BJP', 'Congress', 'AAP'];
+    
+    for (let i = 0; i < parties.length; i++) {
+        if (partyVotes[i] > maxVotes) {
+            maxVotes = partyVotes[i];
+            leadingParty = parties[i];
         }
     }
     
     // Calculate margin
-    const sortedVotes = Object.values(votes).sort((a, b) => b - a);
-    if (sortedVotes.length >= 2 && sortedVotes[0] > 0) {
-        voteMargin = sortedVotes[0] - sortedVotes[1];
+    const sorted = partyVotes.slice().sort((a, b) => b - a);
+    if (sorted.length >= 2 && sorted[0] > 0) {
+        voteMargin = sorted[0] - sorted[1];
     }
     
     // Calculate percentages
-    const bjpPercent = totalVotes > 0 ? Math.round((votes['BJP'] || 0) / totalVotes * 100) : 0;
-    const congressPercent = totalVotes > 0 ? Math.round((votes['Congress'] || 0) / totalVotes * 100) : 0;
-    const aapPercent = totalVotes > 0 ? Math.round((votes['AAP'] || 0) / totalVotes * 100) : 0;
+    const bjpPercent = totalVotes > 0 ? Math.round((votes.BJP / totalVotes) * 100) : 0;
+    const congressPercent = totalVotes > 0 ? Math.round((votes.Congress / totalVotes) * 100) : 0;
+    const aapPercent = totalVotes > 0 ? Math.round((votes.AAP / totalVotes) * 100) : 0;
     
     // Update UI
     const leadingPartyEl = document.getElementById('leadingParty');
@@ -373,20 +407,16 @@ function loadResults() {
     
     // Create/update chart
     renderChart(votes);
+    }).catch(err => {
+        console.error('Error loading results:', err);
+    });
 }
 
 function renderChart(votes) {
     const ctx = document.getElementById('voteChart');
     if (!ctx) return;
     
-    const parties = ['BJP', 'Congress', 'AAP'];
-    const partyData = parties.map(p => votes[p] || 0);
-    
-    const colors = {
-        'BJP': '#ff9933',
-        'Congress': '#00a0e9',
-        'AAP': '#4ecdc4'
-    };
+    const partyData = [votes.BJP, votes.Congress, votes.AAP];
     
     // Destroy existing chart
     if (voteChart) {
@@ -397,12 +427,12 @@ function renderChart(votes) {
     voteChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: parties,
+            labels: ['BJP', 'Congress', 'AAP'],
             datasets: [{
                 label: 'Votes',
                 data: partyData,
-                backgroundColor: parties.map(p => colors[p]),
-                borderColor: parties.map(p => colors[p]),
+                backgroundColor: ['#ff9933', '#00a0e9', '#4ecdc4'],
+                borderColor: ['#ff9933', '#00a0e9', '#4ecdc4'],
                 borderWidth: 1,
                 borderRadius: 8,
             }]
@@ -690,38 +720,46 @@ function handleBoothSearch(e) {
 }
 
 function saveRecentSearch(city) {
-    let searches = JSON.parse(getStorage('recentSearches') || '[]');
-    
-    // Remove if already exists
-    searches = searches.filter(s => s.toLowerCase() !== city.toLowerCase());
-    
-    // Add to beginning
-    searches.unshift(city);
-    
-    // Keep only last 5
-    searches = searches.slice(0, 5);
-    
-    // Save
-    setStorage('recentSearches', JSON.stringify(searches));
-    
-    // Update UI
-    updateRecentSearches();
+    try {
+        let searches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+        
+        // Remove if already exists
+        searches = searches.filter(s => s.toLowerCase() !== city.toLowerCase());
+        
+        // Add to beginning
+        searches.unshift(city);
+        
+        // Keep only last 5
+        searches = searches.slice(0, 5);
+        
+        // Save
+        localStorage.setItem('recentSearches', JSON.stringify(searches));
+        
+        // Update UI
+        updateRecentSearches();
+    } catch(e) {
+        console.log('Could not save recent search');
+    }
 }
 
 function updateRecentSearches() {
     const container = document.querySelector('.search-tags');
     if (!container) return;
     
-    const searches = JSON.parse(getStorage('recentSearches') || '[]');
-    
-    if (searches.length === 0) {
+    try {
+        const searches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+        
+        if (searches.length === 0) {
+            container.innerHTML = '<span class="search-tag">No recent searches</span>';
+            return;
+        }
+        
+        container.innerHTML = searches.map(city => 
+            `<span class="search-tag" onclick="fillCity('${city}')">${city}</span>`
+        ).join('');
+    } catch(e) {
         container.innerHTML = '<span class="search-tag">No recent searches</span>';
-        return;
     }
-    
-    container.innerHTML = searches.map(city => 
-        `<span class="search-tag" onclick="fillCity('${city}')">${city}</span>`
-    ).join('');
 }
 
 function fillCity(city) {
@@ -955,13 +993,21 @@ function logout() {
     }, 1000);
 }
 
+function goToAdmin() {
+    const user = window.electionAPI.getCurrentUser();
+    if (user && user.role === 'admin') {
+        window.location.href = 'admin.html';
+    } else {
+        showToast('Access Denied', 'Admin access required', 'error');
+    }
+}
+
 // ========================================
 // INDEX PAGE STATS
 // ========================================
 function updateIndexStats() {
-    const voters = JSON.parse(getStorage('voters') || '[]');
-    const votes = JSON.parse(getStorage('votes') || '{}');
-    const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0);
+    const votes = window.votesData;
+    const totalVotes = votes.BJP + votes.Congress + votes.AAP;
     
     const totalVotersEl = document.getElementById('totalVoters');
     const totalVotesEl = document.getElementById('totalVotes');

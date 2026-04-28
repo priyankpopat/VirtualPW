@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Election Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="api-client.js"></script>
+    <style>
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--dark-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+        
+        .admin-section {
+            background: var(--dark-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .admin-section h3 {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 2rem;
+        }
+        
+        .votes-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+        
+        .votes-table th {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .votes-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .votes-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        .party-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .party-bjp {
+            background: rgba(255, 153, 51, 0.2);
+            color: #ff9933;
+        }
+        
+        .party-congress {
+            background: rgba(0, 160, 233, 0.2);
+            color: #00a0e9;
+        }
+        
+        .party-aap {
+            background: rgba(78, 205, 196, 0.2);
+            color: #4ecdc4;
+        }
+        
+        .danger-zone {
+            background: rgba(255, 59, 48, 0.1);
+            border: 1px solid rgba(255, 59, 48, 0.3);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-top: 2rem;
+        }
+        
+        .btn-danger {
+            background: #ff3b30;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-danger:hover {
+            background: #ff1d00;
+            transform: translateY(-2px);
+        }
+        
+        .logout-btn {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="bg-effects">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+    </div>
+
+    <!-- Admin Container -->
+    <div class="main-container" style="max-width: 1200px; margin: 0 auto; padding: 2rem;">
+        <div class="admin-header">
+            <div>
+                <h1><i class="fas fa-chart-line"></i> Election Dashboard</h1>
+                <p style="color: var(--text-muted); margin-top: 0.5rem;">Admin Control Panel</p>
+            </div>
+            <button class="logout-btn" onclick="handleLogout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="admin-stats" id="statsContainer">
+            <div class="stat-card">
+                <div class="stat-value" id="totalVotesValue">-</div>
+                <div class="stat-label">Total Votes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalUsersValue">-</div>
+                <div class="stat-label">Registered Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="leadingPartyValue">-</div>
+                <div class="stat-label">Leading Party</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statusValue">-</div>
+                <div class="stat-label">Election Status</div>
+            </div>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="admin-section">
+            <h3><i class="fas fa-chart-bar"></i> Vote Distribution</h3>
+            <div class="chart-container">
+                <canvas id="voteChart"></canvas>
+            </div>
+            
+            <!-- Vote Breakdown -->
+            <div class="admin-stats">
+                <div class="stat-card">
+                    <div style="color: #ff9933; font-size: 1.5rem;">
+                        <i class="fas fa-circle"></i>
+                    </div>
+                    <div class="stat-label">BJP</div>
+                    <div class="stat-value" id="bjpCount">0</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">
+                        <span id="bjpPercent">0</span>%
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div style="color: #00a0e9; font-size: 1.5rem;">
+                        <i class="fas fa-circle"></i>
+                    </div>
+                    <div class="stat-label">Congress</div>
+                    <div class="stat-value" id="congressCount">0</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">
+                        <span id="congressPercent">0</span>%
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div style="color: #4ecdc4; font-size: 1.5rem;">
+                        <i class="fas fa-circle"></i>
+                    </div>
+                    <div class="stat-label">AAP</div>
+                    <div class="stat-value" id="aapCount">0</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">
+                        <span id="aapPercent">0</span>%
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audit Log Section -->
+        <div class="admin-section">
+            <h3><i class="fas fa-history"></i> Recent Votes (Audit Log)</h3>
+            <div style="overflow-x: auto;">
+                <table class="votes-table">
+                    <thead>
+                        <tr>
+                            <th>Voter Name</th>
+                            <th>Email</th>
+                            <th>Party Voted</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditLogTable">
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: var(--text-muted);">
+                                <i class="fas fa-spinner fa-spin"></i> Loading votes...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top: 1rem; text-align: center;">
+                <button class="btn-primary" onclick="loadMoreVotes()" style="padding: 0.75rem 1.5rem;">
+                    <i class="fas fa-list"></i> Load More Votes
+                </button>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="danger-zone">
+            <h3 style="color: #ff3b30; margin-bottom: 1rem;">
+                <i class="fas fa-exclamation-triangle"></i> Danger Zone
+            </h3>
+            <p style="margin-bottom: 1rem; color: var(--text-muted);">
+                Resetting the election will permanently delete all votes. This action cannot be undone.
+            </p>
+            <button class="btn-danger" onclick="handleResetElection()">
+                <i class="fas fa-trash"></i> Reset Election
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        let adminChart = null;
+        let auditLogPage = 0;
+
+        // Check if user is admin
+        document.addEventListener('DOMContentLoaded', async function() {
+            const user = window.electionAPI.getCurrentUser();
+            if (!user || user.role !== 'admin') {
+                alert('Access Denied: Admin only');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Load initial data
+            loadDashboard();
+            
+            // Refresh every 5 seconds
+            setInterval(loadDashboard, 5000);
+        });
+
+        async function loadDashboard() {
+            try {
+                const stats = await window.electionAPI.getAdminStats();
+                const audit = await window.electionAPI.getAuditLog(10);
+
+                // Update stats
+                document.getElementById('totalVotesValue').textContent = stats.totalVotes;
+                document.getElementById('totalUsersValue').textContent = stats.totalUsers;
+                document.getElementById('leadingPartyValue').textContent = stats.leadingParty;
+                document.getElementById('statusValue').textContent = stats.electionStatus;
+
+                // Update vote breakdown
+                document.getElementById('bjpCount').textContent = stats.voteCounts.BJP;
+                document.getElementById('congressCount').textContent = stats.voteCounts.Congress;
+                document.getElementById('aapCount').textContent = stats.voteCounts.AAP;
+
+                document.getElementById('bjpPercent').textContent = stats.percentages.BJP;
+                document.getElementById('congressPercent').textContent = stats.percentages.Congress;
+                document.getElementById('aapPercent').textContent = stats.percentages.AAP;
+
+                // Update chart
+                updateChart(stats.voteCounts);
+
+                // Update audit log
+                updateAuditLog(audit.votes);
+            } catch(error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        function updateChart(votes) {
+            const ctx = document.getElementById('voteChart');
+            if (!ctx) return;
+
+            const data = [votes.BJP, votes.Congress, votes.AAP];
+
+            if (adminChart) {
+                adminChart.destroy();
+            }
+
+            adminChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['BJP', 'Congress', 'AAP'],
+                    datasets: [{
+                        label: 'Votes Received',
+                        data: data,
+                        backgroundColor: ['#ff9933', '#00a0e9', '#4ecdc4'],
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: Math.max(...data) + 5,
+                            ticks: { color: 'rgba(255, 255, 255, 0.5)' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        x: {
+                            ticks: { color: 'rgba(255, 255, 255, 0.5)' },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateAuditLog(votes) {
+            const tbody = document.getElementById('auditLogTable');
+            
+            if (votes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No votes yet</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = votes.map(vote => `
+                <tr>
+                    <td>${vote.voter}</td>
+                    <td>${vote.email}</td>
+                    <td>
+                        <span class="party-badge party-${vote.party.toLowerCase()}">
+                            ${vote.party}
+                        </span>
+                    </td>
+                    <td>${vote.time}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadMoreVotes() {
+            auditLogPage++;
+            try {
+                const audit = await window.electionAPI.getAuditLog(50, auditLogPage * 50);
+                const tbody = document.getElementById('auditLogTable');
+                
+                const newRows = audit.votes.map(vote => `
+                    <tr>
+                        <td>${vote.voter}</td>
+                        <td>${vote.email}</td>
+                        <td>
+                            <span class="party-badge party-${vote.party.toLowerCase()}">
+                                ${vote.party}
+                            </span>
+                        </td>
+                        <td>${vote.time}</td>
+                    </tr>
+                `).join('');
+                
+                tbody.innerHTML += newRows;
+            } catch(error) {
+                alert('Error loading more votes');
+            }
+        }
+
+        async function handleResetElection() {
+            try {
+                const result = await window.electionAPI.resetElection();
+                if (result) {
+                    showToast('✓ Success', result.message, 'success');
+                    loadDashboard();
+                }
+            } catch(error) {
+                showToast('✗ Error', error.message, 'error');
+            }
+        }
+
+        function handleLogout() {
+            window.electionAPI.logout();
+            window.location.href = 'index.html';
+        }
+
+        function showToast(title, message, type) {
+            const container = document.getElementById('toastContainer');
+            const id = Date.now();
+            
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <strong>${title}</strong>
+                    <p>${message}</p>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

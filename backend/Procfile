@@ -1,0 +1,3 @@
+# For Railway deployment
+
+web: node server.js
