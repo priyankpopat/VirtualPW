@@ -101,11 +101,14 @@ async function castVoteAPI(party) {
     try {
         const token = getAuthToken();
         
+        console.log('🗳️ castVoteAPI called for:', party);
+        console.log('🔐 Token exists:', !!token);
+        
         if (!token) {
             throw new Error('Not authenticated. Please login first.');
         }
         
-        console.log('🗳️ Casting vote for:', party);
+        console.log('📤 Sending vote request to:', `${API_URL}/vote`);
         
         const response = await fetch(`${API_URL}/vote`, {
             method: 'POST',
@@ -117,6 +120,9 @@ async function castVoteAPI(party) {
         });
 
         const data = await response.json();
+        
+        console.log('📥 Vote response status:', response.status);
+        console.log('📥 Vote response data:', data);
 
         if (!response.ok) {
             throw new Error(data.error || 'Vote failed');

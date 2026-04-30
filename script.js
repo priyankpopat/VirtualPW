@@ -76,9 +76,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const password = document.getElementById('loginPassword').value;
             
             try {
+                console.log('🔑 Attempting login with:', email);
                 const result = await window.electionAPI.login(email, password);
+                console.log('✅ Login successful, result:', result);
                 showToast('✓ Login Successful!', `Welcome ${result.user.name}!`, 'success');
-                setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
+                console.log('📍 Redirecting to dashboard.html');
+                setTimeout(() => { 
+                    window.location.href = './dashboard.html';
+                }, 1000);
             } catch(error) {
                 showToast('❌ Login Failed', error.message, 'error');
                 document.getElementById('loginPasswordError').textContent = error.message;
@@ -299,9 +304,11 @@ function toggleSidebar() {
 async function castVote(party) {
     try {
         console.log('🗳️ Vote button clicked for:', party);
+        console.log('🔐 Auth token:', window.electionAPI.getAuthToken() ? 'FOUND' : 'MISSING');
         
         // Call backend API
         const result = await window.electionAPI.castVote(party);
+        console.log('✅ Vote API result:', result);
         
         // Show success
         showToast('✅ Vote Recorded!', `Your vote for ${party} has been recorded!`, 'success');
