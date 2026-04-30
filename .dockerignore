@@ -1,0 +1,10 @@
+node_modules
+.git
+.gitignore
+.env
+*.md
+.DS_Store
+.vscode
+backend/node_modules
+backend/.env
+.git
